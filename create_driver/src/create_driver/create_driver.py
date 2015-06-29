@@ -3,6 +3,7 @@
 # The MIT License
 #
 # Copyright (c) 2007 Damon Kohler
+# Copyright (c) 2015 Jonathan Le Roux (Modifications for Create 2)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +44,7 @@ functionality in the Turtlebot class. In addition, since OI is built on SCI the
 SerialCommandInterface class is also used for OI.
 
 """
-__author__ = "damonkohler@gmail.com (Damon Kohler)"
+__author__ = "damonkohler@gmail.com (Damon Kohler), leroux@merl.com (Jonathan Le Roux)"
 
 import logging
 import math
@@ -94,8 +95,27 @@ CREATE_OPCODES = dict(
     wait_event = 158,
     )
 
+CREATE2_OPCODES = dict(
+    soft_reset = 7,
+    query = 142,
+    pwm_motors = 144,
+    drive_wheels = 145,
+    drive_pwm = 146,
+    stream = 148,
+    query_list = 149,
+    do_stream = 150,
+    scheduling_leds = 162,
+    digit_leds_raw = 163,
+    digit_leds_ascii = 164,
+    buttons = 165,
+    schedule = 166,
+    set_day_time = 167,
+    stop = 173,
+    )
+
 REMOTE_OPCODES = {
     # Remote control.
+    0: 'none',
     129: 'left',
     130: 'forward',
     131: 'right',
@@ -123,7 +143,18 @@ REMOTE_OPCODES = {
     252: 'red-buoy-and-green-buoy',
     254: 'red-buoy-and-green-buoy-and-force-field',
     255: 'none',
-    }
+    # Roomba 600 drive-on charger.
+    160: 'reserved',
+    161: 'force-field',
+    164: 'green-buoy',
+    165: 'green-buoy-and-force-field',
+    168: 'red-buoy',
+    169: 'red-buoy-and-force-field',
+    172: 'red-buoy-and-green-buoy',
+    173: 'red-buoy-and-green-buoy-and-force-field',
+    # Roomba 600 Virtual Wall.
+    162: 'virtual-wall'
+   }
 
 BAUD_RATES = (  # In bits per second.
     300,
@@ -136,8 +167,8 @@ BAUD_RATES = (  # In bits per second.
     19200,
     28800,
     38400,
-    57600,  # Default.
-    115200)
+    57600,  # Default for Roomba and Create
+    115200) # Default for Create 2
 
 CHARGING_STATES = (
     'not-charging',
@@ -179,7 +210,82 @@ SENSOR_GROUP_PACKET_LENGTHS = {
     4: 14,
     5: 12,
     6: 52,
-    100: 80 }
+    100: 80,
+    101: 28,
+    102: 12,
+    103: 9 }
+
+# From: http://www.harmony-central.com/MIDI/Doc/table2.html
+MIDI_TABLE = {'rest': 0, 'R': 0, 'pause': 0,
+              'G1': 31, 'G#1': 32, 'A1': 33,
+              'A#1': 34, 'B1': 35,
+
+              'C2': 36, 'C#2': 37, 'D2': 38,
+              'D#2': 39, 'E2': 40, 'F2': 41,
+              'F#2': 42, 'G2': 43, 'G#2': 44,
+              'A2': 45, 'A#2': 46, 'B2': 47,
+
+              'C3': 48, 'C#3': 49, 'D3': 50,
+              'D#3': 51, 'E3': 52, 'F3': 53,
+              'F#3': 54, 'G3': 55, 'G#3': 56,
+              'A3': 57, 'A#3': 58, 'B3': 59,
+
+              'C4': 60, 'C#4': 61, 'D4': 62,
+              'D#4': 63, 'E4': 64, 'F4': 65,
+              'F#4': 66, 'G4': 67, 'G#4': 68,
+              'A4': 69, 'A#4': 70, 'B4': 71,
+
+              'C5': 72, 'C#5': 73, 'D5': 74,
+              'D#5': 75, 'E5': 76, 'F5': 77,
+              'F#5': 78, 'G5': 79, 'G#5': 80,
+              'A5': 81, 'A#5': 82, 'B5': 83,
+
+              'C6': 84, 'C#6': 85, 'D6': 86,
+              'D#6': 87, 'E6': 88, 'F6': 89,
+              'F#6': 90, 'G6': 91, 'G#6': 92,
+              'A6': 93, 'A#6': 94, 'B6': 95,
+
+              'C7': 96, 'C#7': 97, 'D7': 98,
+              'D#7': 99, 'E7': 100, 'F7': 101,
+              'F#7': 102, 'G7': 103, 'G#7': 104,
+              'A7': 105, 'A#7': 106, 'B7': 107,
+
+              'C8': 108, 'C#8': 109, 'D8': 110,
+              'D#8': 111, 'E8': 112, 'F8': 113,
+              'F#8': 114, 'G8': 115, 'G#8': 116,
+              'A8': 117, 'A#8': 118, 'B8': 119,
+
+              'C9': 120, 'C#9': 121, 'D9': 122,
+              'D#9': 123, 'E9': 124, 'F9': 125,
+              'F#9': 126, 'G9': 127}
+              
+# Because a 7 segment display is not sufficient to display alphabetic
+# characters properly, all characters are an approximation, and not all
+# ASCII codes are implemented.
+ASCII_TABLE = {' ': 32, '!': 33,
+              '"': 34, '#': 35,
+              '%': 37, '&': 38,
+              '\'': 39, '[': 40,
+              ']': 41, ',':  44,
+              '-': 45, '.': 46, '/': 47,
+              '0': 48, '1': 49, '2': 50,
+              '3': 51, '4': 52, '5': 53,
+              '6': 54, '7': 55, '8': 56,
+              '9': 57, ':': 58, ';': 59,
+              '<': 60, '=': 61, '>': 62,
+              '?': 63, 'A': 65,
+              'B': 66, 'C': 67, 'D': 68,
+              'E': 69, 'F': 70, 'G': 71,
+              'H': 72, 'I': 73, 'J': 74,
+              'K': 75, 'L': 76, 'M': 77,
+              'N': 78, 'O': 79, 'P': 80,
+              'Q': 81, 'R': 82, 'S': 83,
+              'T': 84, 'U': 85, 'V': 86,
+              'W': 87, 'X': 88, 'Y': 89,
+              'Z': 90, '\\': 92,
+              '^': 94, '_': 95, '`': 96,
+              '{': 123, '|': 124,
+              '}': 125, '~': 126}
 
 # drive constants.
 RADIUS_TURN_IN_PLACE_CW = -1
@@ -190,9 +296,11 @@ RADIUS_MAX = 2000
 VELOCITY_MAX = 500  # mm/s
 VELOCITY_SLOW = int(VELOCITY_MAX * 0.33)
 VELOCITY_FAST = int(VELOCITY_MAX * 0.66)
+VELOCITY_MIN = 25  # mm/s
 
 MAX_WHEEL_SPEED = 500
 WHEEL_SEPARATION = 260  # mm
+WHEEL_SEPARATION_CREATE2 = 235  # mm (I'm measuring ~233/234)
 
 SERIAL_TIMEOUT = 2  # Number of seconds to wait for reads. 2 is generous.
 START_DELAY = 5  # Time it takes the Roomba/Turtlebot to boot.
@@ -400,9 +508,11 @@ class Turtlebot(Roomba):
     """
     super(Turtlebot, self).__init__()
     
-  def start(self, tty='/dev/ttyUSB0', baudrate=57600):
+  def start(self, tty='/dev/ttyUSB0', baudrate=115200):
     super(Turtlebot, self).start(tty, baudrate)
     self.sci.add_opcodes(CREATE_OPCODES)
+    """Add the Create 2 OpCodes - Is this the only thing that needs to be done?"""
+    self.sci.add_opcodes(CREATE2_OPCODES) ;
       
   def control(self):
     """Start the robot's SCI interface and place it in safe or full mode."""

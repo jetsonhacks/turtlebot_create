@@ -17,6 +17,7 @@ add_message_files(DIRECTORY msg
                         Drive.msg
                         RawTurtlebotSensorState.msg
                         RoombaSensorState.msg
+			Create2SensorState.msg
                         Turtle.msg
                         TurtlebotSensorState.msg)
                         

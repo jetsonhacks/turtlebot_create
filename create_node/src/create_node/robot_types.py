@@ -28,6 +28,7 @@
 
 import create_sensor_handler
 import roomba_sensor_handler
+import create2_sensor_handler
 
 __author__ = 'moesenle@in.tum.de (Lorenz Moesenlechner)'
 
@@ -44,5 +45,7 @@ ROBOT_TYPES = {
     'create': RobotType('create', 57600, create_sensor_handler.CreateSensorHandler,
                         wheel_separation=0.26),
     'roomba': RobotType('roomba', 115200, roomba_sensor_handler.RoombaSensorHandler,
+                        wheel_separation=0.235),
+    'create2': RobotType('create2', 115200, create2_sensor_handler.Create2SensorHandler,
                         wheel_separation=0.235),
     }

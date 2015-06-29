@@ -529,7 +529,7 @@ def turtlebot_main(argv):
             c.spin()
 
         except Exception as ex:
-            msg = "Failed to contact device with error: [%s]. Please check that the Create is powered on and that the connector is plugged into the Create."%(ex)
+            msg = "[CORRECT CREATE2] Failed to contact device with error: [%s]. Please check that the Create is powered on and that the connector is plugged into the Create."%(ex)
             c._diagnostics.node_status(msg,"error")
             rospy.logerr(msg)
 
